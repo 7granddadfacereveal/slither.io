@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Slither Clone - Smart Bots</title>
+  <title>bombs</title>
   <style>
     html, body {
       height: 100%;
@@ -70,17 +70,23 @@
         </div>
       </div>
       <div style="margin-top: -80px">
-        <button onclick="hidetroubleshoot()">Dismiss trouble shooting message</button>
+        <button onclick="HIDE_TROUBLESHOOT()">Dismiss trouble shooting message</button>
       </div>
     </p>
   </div>
 
+  <div style="margin-top: -80px">
+    <button onclick="INCREASE_BOTS()">Increase bots (probably wont work)</button>
+    <p id="botpercentage" style="color:white; font-family: sans; margin-top: -40px">5</p>
+  </div>
+
   <script>
-    function increaseBots() {
+    function INCREASE_BOTS() {
       BOT_COUNT += 1;
+      document.getElementById("botpercentage").innerHTML = BOT_COUNT;
     }
 
-    function hidetroubleshoot() {
+    function HIDE_TROUBLESHOOT() {
       document.getElementById("troubleshootmessage").style.visibility = "hidden";
     }
 
@@ -91,15 +97,15 @@
     canvas.height = window.innerHeight;
 
     const WORLD_SIZE = 9000;
-    let BOT_COUNT = 5;  // Initial bot count
+    let BOT_COUNT = 5;
     const ATTACK_CHANCE = 0.01;
-    const AVOID_RADIUS = 3; // Distance at which bots start to avoid other bots
+    const AVOID_RADIUS = 3;
 
     let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
     let camera = { x: 0, y: 0 };
 
-    let orbs = []; // Start with an empty array of orbs
-    function spawnOrbs(count = 50) {
+    let orbs = [];
+    function SPAWN_ORBS(count = 50) {
       for (let i = 0; i < count; i++) {
         orbs.push({
           x: Math.random() * WORLD_SIZE,
@@ -113,7 +119,7 @@
     let playerColor, player, snake, snakeLength;
     const snakeSpeed = 2;
 
-    function resetPlayer() {
+    function RESET_PLAYER() {
       player = {
         x: WORLD_SIZE / 2,
         y: WORLD_SIZE / 2,
@@ -122,13 +128,13 @@
       snake = [];
       snakeLength = 10;
       playerColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-      updateScore();
+      UPDATE_SCORE();
     }
 
-    resetPlayer();
-    spawnOrbs(3000);  // Spawn initial orbs
+    RESET_PLAYER();
+    SPAWN_ORBS(3000);
 
-    function createBot(id) {
+    function CREATE_BOT(id) {
       return {
         id,
         color: `hsl(${Math.random() * 360}, 100%, 60%)`,
@@ -144,7 +150,7 @@
 
     let bots = [];
     for (let i = 0; i < BOT_COUNT; i++) {
-      bots.push(createBot(i));
+      bots.push(CREATE_BOT(i));
     }
 
     canvas.addEventListener('mousemove', (e) => {
@@ -153,19 +159,19 @@
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'f' || e.key === 'F') toggleCursor();
+      if (e.key === 'f' || e.key === 'F') TOGGLE_CURSOR();
     });
     canvas.style.cursor = 'default';
 
-    function toggleCursor() {
+    function TOGGLE_CURSOR() {
       canvas.style.cursor = canvas.style.cursor === 'none' ? 'default' : 'none';
     }
 
-    function updateScore() {
+    function UPDATE_SCORE() {
       document.getElementById('score').textContent = `Score: ${snakeLength}`;
     }
 
-    function dropOrbs(trail, color) {
+    function DROP_ORBS(trail, color) {
       for (let part of trail) {
         orbs.push({
           x: part.x,
@@ -176,7 +182,7 @@
       }
     }
 
-    function checkCollision(x1, y1, r1, trail) {
+    function CHECK_COLLISION(x1, y1, r1, trail) {
       for (let part of trail.slice(5)) {
         const dist = Math.hypot(x1 - part.x, y1 - part.y);
         if (dist < r1) {
@@ -186,7 +192,7 @@
       return false;
     }
 
-    function update() {
+    function UPDATE() {
       const angle = Math.atan2(mouse.y - canvas.height / 2, mouse.x - canvas.width / 2);
       player.x += Math.cos(angle) * snakeSpeed;
       player.y += Math.sin(angle) * snakeSpeed;
@@ -197,25 +203,23 @@
       snake.unshift({ x: player.x, y: player.y });
       if (snake.length > snakeLength) snake.pop();
 
-      // Player eats orbs (slow growth)
       orbs = orbs.filter(orb => {
         const dx = orb.x - player.x;
         const dy = orb.y - player.y;
         const dist = Math.hypot(dx, dy);
         if (dist < orb.radius + player.radius) {
-          snakeLength += 0.5; // Slower length increase
-          player.radius += 0.2; // Slower radius growth
-          updateScore();
+          snakeLength += 0.5;
+          player.radius += 0.04;
+          UPDATE_SCORE();
           return false;
         }
         return true;
       });
 
-      // Check if player hits bot trails
       for (let bot of bots) {
-        if (checkCollision(player.x, player.y, player.radius, bot.trail)) {
-          dropOrbs(snake, playerColor);
-          resetPlayer();
+        if (CHECK_COLLISION(player.x, player.y, player.radius, bot.trail)) {
+          DROP_ORBS(snake, playerColor);
+          RESET_PLAYER();
           return;
         }
       }
@@ -258,27 +262,25 @@
         bot.trail.unshift({ x: bot.x, y: bot.y });
         if (bot.trail.length > bot.length) bot.trail.pop();
 
-        // Bot eats orbs
         orbs = orbs.filter(orb => {
           const dist = Math.hypot(orb.x - bot.x, orb.y - bot.y);
           if (dist < orb.radius + bot.radius) {
             bot.length++;
-            bot.radius += 0.3;
+            bot.radius += 0.04;
             return false;
           }
           return true;
         });
 
-        // Bot hits player trail or other bots' trails
-        if (checkCollision(bot.x, bot.y, bot.radius, snake) || bots.some(otherBot => otherBot.id !== bot.id && checkCollision(bot.x, bot.y, bot.radius, otherBot.trail))) {
-          dropOrbs(bot.trail, bot.color);
-          bots[index] = createBot(bot.id);
+        if (CHECK_COLLISION(bot.x, bot.y, bot.radius, snake) || bots.some(otherBot => otherBot.id !== bot.id && CHECK_COLLISION(bot.x, bot.y, bot.radius, otherBot.trail))) {
+          DROP_ORBS(bot.trail, bot.color);
+          bots[index] = CREATE_BOT(bot.id);
           return;
         }
       });
     }
 
-    function draw() {
+    function DRAW() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       for (let orb of orbs) {
@@ -305,13 +307,13 @@
       }
     }
 
-    function loop() {
-      update();
-      draw();
-      requestAnimationFrame(loop);
+    function LOOP() {
+      UPDATE();
+      DRAW();
+      requestAnimationFrame(LOOP);
     }
 
-    loop();
+    LOOP();
   </script>
 </body>
 </html>

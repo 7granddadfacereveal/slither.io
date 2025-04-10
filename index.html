@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slither Clone - Instant Turn</title>
+  <style>
+    /* Ensure full height and no overflow */
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    /* Canvas covers entire viewport */
+    canvas {
+      display: block;
+      background-color: #111;
+      width: 100%;
+      height: 100%;
+      
+      /* Initially hide the cursor */
+      cursor: none;
+      z-index: 1;  /* Keep canvas behind scoreboard */
+    }
+
+    /* Scoreboard styling */
+    .scoreboard {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      z-index: 10; /* Ensure scoreboard is above the canvas */
+    }
+  </style>
+</head>
+<body>
+<!-- Scoreboard container -->
+<div class="scoreboard">
+  <span id="score">Score: 10</span>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+// Make canvas fill the entire window
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const WORLD_SIZE = 3000;
+
+// 🎨 Random color for the player
+const playerColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+
+let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+let camera = { x: 0, y: 0 };
+
+let player = {
+  x: WORLD_SIZE / 2,
+  y: WORLD_SIZE / 2,
+  radius: 8  // Initial size of the player
+};
+
+const snake = [];
+let snakeLength = 10;  // This will be the score
+let snakeSpeed = 2;
+
+// Orbs
+let orbs = [];
+for (let i = 0; i < 300; i++) {
+  orbs.push({
+    x: Math.random() * WORLD_SIZE,
+    y: Math.random() * WORLD_SIZE,
+    radius: 5 + Math.random() * 3,
+    color: `hsl(${Math.random() * 360}, 100%, 50%)`
+  });
+}
+
+// 🖱️ Track mouse movement
+canvas.addEventListener('mousemove', (e) => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+// Handle cursor visibility toggle with "F" key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'f' || e.key === 'F') {
+    toggleCursor();
+  }
+});
+canvas.style.cursor = 'default';
+function toggleCursor() {
+  // Toggle cursor visibility when "F" is pressed
+  if (canvas.style.cursor === 'none') {
+    canvas.style.cursor = 'default'; // Show the cursor
+  } else {
+    canvas.style.cursor = 'default'; // Hide the cursor
+  }
+}
+
+function update() {
+  // 🧭 Instantly calculate angle toward current mouse position
+  const angle = Math.atan2(
+    mouse.y - canvas.height / 2,
+    mouse.x - canvas.width / 2
+  );
+  player.x += Math.cos(angle) * snakeSpeed;
+  player.y += Math.sin(angle) * snakeSpeed;
+
+  camera.x = player.x - canvas.width / 2;
+  camera.y = player.y - canvas.height / 2;
+
+  // Snake follows player
+  snake.unshift({ x: player.x, y: player.y });
+  if (snake.length > snakeLength) {
+    snake.pop();
+  }
+
+  // Eat orbs
+  orbs = orbs.filter(orb => {
+    const dx = orb.x - player.x;
+    const dy = orb.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < orb.radius + player.radius) {
+      snakeLength += 1;  // Increase score when orb is eaten
+      player.radius += 0.5;  // Increase player size (radius)
+      updateScore();  // Update the scoreboard
+      return false; // Remove orb after it's eaten
+    }
+    return true;
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Orbs
+  for (let orb of orbs) {
+    ctx.beginPath();
+    ctx.fillStyle = orb.color;
+    ctx.arc(orb.x - camera.x, orb.y - camera.y, orb.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Snake (player) body
+  for (let i = 0; i < snake.length; i++) {
+    ctx.beginPath();
+    ctx.fillStyle = playerColor;
+    ctx.arc(snake[i].x - camera.x, snake[i].y - camera.y, player.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function updateScore() {
+  // Update the score in the scoreboard
+  const scoreElement = document.getElementById('score');
+  scoreElement.textContent = `Score: ${snakeLength}`;
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
